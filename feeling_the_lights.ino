@@ -2,7 +2,7 @@
 #include "arduinoFFT.h"
 
 #define LED        2   // LED on the Arduino board, used for debugging if necessary
-#define STRIP_PIN  3    // LED strip pin
+#define STRIP_PIN  2    // LED strip pin
 #define N_LED      10   // Number of LEDs
 
 // Variables to play with
