@@ -2,7 +2,7 @@
 #include "arduinoFFT.h"
 
 #define LED        2   // LED on the Arduino board, used for debugging if necessary
-#define STRIP_PIN  2    // LED strip pin
+#define STRIP_PIN  3    // LED strip pin
 #define N_LED      10   // Number of LEDs
 
 // Variables to play with
@@ -16,11 +16,11 @@ const int    wait      = 20;  // Dely for the display of the leds, more wait ==>
 // Max frequency will be:          mx_f = Fs/2-resolution
 
 // Asumming:
-// Fs      = 4500 kHz
-// samples = 64
-// ==> res = ~70.3125 Hz that means each component of the vector vReal will correspond to the intensity for the bin
-const int    samples   = 64;
-const double Fs        = 4500;
+// Fs      = 6400 kHz
+// samples = 128
+// ==> res = ~50 Hz that means each component of the vector vReal will correspond to the intensity for the bin
+const int    samples   = 128;
+const double Fs        = 6400;
 volatile double  vReal[samples];
 double           vImag[samples];
 
@@ -174,49 +174,6 @@ ISR(ADC_vect) {
     bitClear(ADCSRA, 6); // ADSC = 0 ==> ADC Don't Start Conversion
   }
 }
-
-void loop () {
-  int volumen, direction;
-  uint16_t i, j, vel, shift, counter;
-
-  vel = 2;
-  direction = 1;
-  counter = 0;
-
-  // This for loop could be better done... and I am looking at you Omar
-   for(int j = 0; j < 10000; j++) {
-    strip.fill(wheel_color, 0, 0);  // Fill the full strip with the corresponding color of the wheel
-    
-    sampling(j+1);  //  Sample the ADC
-    processAudio(); // Calculate FFT
-    // volumen = avg_bass();
-    counter++;
-    
-    if (j%10==0){
-      Serial.println(String(vReal[0]) + " -- " + String(vReal[1]) + " -- " + String(vReal[2]) + " -- " + String(vReal[3]) + " -- " + String(vReal[4]) + " -- " + String(vReal[5]) + " -- " + String(vReal[6]) + " -- " + String(vReal[7]));  
-    }
-    // Finding the max value of the bass frequencies
-    int max = vReal[1]; // Not counting component 0
-    for (int i = 2; i < 4; i++) {
-      if (vReal[i] > max)
-        max = vReal[i];
-    }
-
-    if (max>bass_th && counter>2) { // Check if there's a max, but also that the previos max happened "counter" steps ago
-      direction = direction * -1;
-      counter = 0;
-    }
-
-    // changing the direccion of the 3 LED if a beat was heard
-    strip.setPixelColor((direction*j/vel)%10, strip.Color(255, 255, 255));
-    strip.setPixelColor((direction*j/vel-1)%10, strip.Color(155, 155, 155));
-    strip.setPixelColor((direction*j/vel+1)%10, strip.Color(155, 155, 155));
-    strip.show();
-
-    delay(wait); // this wait will control the speed of the refresh, more wait ==> slower
-  }
-}
-
 // Funtion that will enable the ADC and do a continous reading. While being IDLE the wheel_color will be calculated
 void sampling(int j) {
   samp_done = 0;
@@ -254,4 +211,50 @@ uint32_t Wheel(byte WheelPos) {
 // Will sample the ADC, the do the FFT and finally average the bin 3, 4, and 5 (corresponding to f = ~210 to ~351 Hz)
 int avg_bass() {
   return((vReal[2] + vReal[3] + vReal[4]) / 3);
+}
+
+void loop () {
+  javi_loop_1();
+}
+
+void javi_loop_1() {
+  int volumen, direction;
+  uint16_t i, j, vel, shift, counter;
+
+  vel = 2;
+  direction = 1;
+  counter = 0;
+
+  // This for loop could be better done... and I am looking at you Omar
+   for(j = 0; j < 10000; j++) {
+    strip.fill(wheel_color, 0, 0);  // Fill the full strip with the corresponding color of the wheel
+    
+    sampling(j+1);  // Sample the ADC
+    processAudio(); // Calculate FFT
+    // volumen = avg_bass();
+    counter++;
+    
+    if (j%10 == 0) {
+      Serial.print(String(vReal[0]) + " -- " + String(vReal[1]) + " -- " + String(vReal[2]) + " -- " + String(vReal[3]) + " -- " + String(vReal[4]) + " -- " + String(vReal[5]) + " -- " + String(vReal[6]) + " -- " + String(vReal[7]) + " -- ");
+      Serial.println(String(vReal[8]) + " -- " + String(vReal[9]) + " -- " + String(vReal[10]) + " -- " + String(vReal[11]) + " -- " + String(vReal[12]) + " -- " + String(vReal[13]) + " -- " + String(vReal[14]) + " -- " + String(vReal[15]));
+    } 
+    // Finding the max value of the bass frequencies
+    int max = vReal[1]; // Not counting component 0
+    for (i = 2; i < 4; i++)
+      if (vReal[i] > max)
+        max = vReal[i];
+
+    if (max>bass_th && counter>2) { // Check if there's a max, but also that the previos max happened "counter" steps ago
+      direction = direction * -1;
+      counter = 0;
+    }
+
+    // changing the direccion of the 3 LED if a beat was heard
+    strip.setPixelColor((direction*j/vel)%10, strip.Color(255, 255, 255));
+    strip.setPixelColor((direction*j/vel-1)%10, strip.Color(155, 155, 155));
+    strip.setPixelColor((direction*j/vel+1)%10, strip.Color(155, 155, 155));
+    strip.show();
+
+    delay(wait); // this wait will control the speed of the refresh, more wait ==> slower
+  }
 }
