@@ -7,7 +7,7 @@
 
 // Variables to play with
 const int    bass_th   = 500; // Threshold for the bass amplitude
-const int    wait      = 20;  // Dely for the display of the leds, more wait ==> more slow the animation
+const int    wait      = 0;  // Dely for the display of the leds, more wait ==> more slow the animation
 const bool   samp_type = 0;   // 1 = optimized, 0 = normal
 
 // FFT
@@ -231,7 +231,8 @@ int avg_bass() {
 }
 
 void loop () {
-  javi_loop_1();
+  //javi_loop_1();
+  hori_loop_1();
 }
 
 void javi_loop_1() {
@@ -243,7 +244,7 @@ void javi_loop_1() {
   counter = 0;
 
   // This for loop could be better done... and I am looking at you Omar
-   for(j = 0; j < 10000; j++) {
+  for(j = 0; j < 10000; j++) {
     if (samp_type)
       sampling_opt(j+1);  // Sample the ADC
     else {
@@ -278,6 +279,49 @@ void javi_loop_1() {
     strip.setPixelColor((direction*j/vel+1)%10, strip.Color(155, 155, 155));
     strip.show();
 
+    delay(wait); // this wait will control the speed of the refresh, more wait ==> slower
+  }
+}
+
+void hori_loop_1() {
+  int volumen;
+  unsigned int pix = 0;
+
+  // This for loop could be better done... and I am looking at you Omar
+   for(int j = 0; j < 25600; j++) {
+    if (samp_type)
+      sampling_opt(j+1);  // Sample the ADC
+    else {
+      sampling_nor();  // Sample the ADC
+      wheel_color = Wheel(j);
+    }
+    strip.fill(wheel_color, 0, 0);  // Fill the full strip with the corresponding color of the wheel
+    processAudio(); // Calculate FFT
+    
+    // Debug
+    /*if (j%10 == 0) {
+      Serial.print(String(vReal[0]) + " -- " + String(vReal[1]) + " -- " + String(vReal[2]) + " -- " + String(vReal[3]) + " -- " + String(vReal[4]) + " -- " + String(vReal[5]) + " -- " + String(vReal[6]) + " -- " + String(vReal[7]) + " -- ");
+      Serial.println(String(vReal[8]) + " -- " + String(vReal[9]) + " -- " + String(vReal[10]) + " -- " + String(vReal[11]) + " -- " + String(vReal[12]) + " -- " + String(vReal[13]) + " -- " + String(vReal[14]) + " -- " + String(vReal[15]));
+    } */
+    
+    //Serial.println(String(vReal[0]) + " -- " + String(vReal[1]) + " -- " + String(vReal[2]) + " -- " + String(vReal[3]) + " -- " + String(vReal[4]) + " -- " + String(vReal[5]) + " -- " + String(vReal[6]) + " -- " + String(vReal[7]));
+    // Finding the max value of the bass frequencies
+    int max = vReal[1]; // Not counting component 0
+    for (int i = 2; i < 3; i++) {
+      if (vReal[i] > max)
+        max = vReal[i];
+    }
+    // changing the direccion of the 3 LED if a beat was heard
+    if (max > bass_th) {
+      strip.setPixelColor(++pix % N_LED, 255, 0, 0);
+      strip.setPixelColor(++pix % N_LED, 255, 255, 0);
+      strip.setPixelColor(++pix % N_LED, 255, 255, 100);
+    } else {
+      strip.setPixelColor(--pix % N_LED, 255, 255, 100);
+      strip.setPixelColor(--pix % N_LED, 255, 255, 0);
+      strip.setPixelColor(--pix % N_LED, 255, 0, 0);
+    }
+    strip.show();
     delay(wait); // this wait will control the speed of the refresh, more wait ==> slower
   }
 }
