@@ -33,7 +33,14 @@ uint32_t wheel_color; // Variabls with the 32bits value of the color wheel for t
 
 // Defining the objects
 Adafruit_NeoPixel strip(N_LED, STRIP_PIN, NEO_GRB + NEO_KHZ800);
-arduinoFFT FFT;
+//ArduinoFFT FFT;
+// Define this to use reciprocal multiplication for division and some more speedups that might decrease precision
+//#define FFT_SPEED_OVER_PRECISION
+
+// Define this to use a low-precision square root approximation instead of the regular sqrt() call
+// This might only work for specific use cases, but is significantly faster. Only works for ArduinoFFT<float>.
+//#define FFT_SQRT_APPROXIMATION
+ArduinoFFT<double> FFT = ArduinoFFT<double>(vReal, vImag, samples, Fs);
 
 // Setup of the whole arduino, do not change!
 void setup () {
@@ -186,11 +193,10 @@ void sampling(int j) {
 
 // Processing the audio, that means doing the FFT with the ADC values read that were stored in vReal
 void processAudio() {
-  FFT.DCRemoval(vReal, samples);
-  FFT = arduinoFFT(vReal, vImag, samples, Fs);
-  FFT.Windowing(FFT_WIN_TYP_HAMMING, FFT_FORWARD);
-  FFT.Compute(FFT_FORWARD);
-  FFT.ComplexToMagnitude();
+  FFT.dcRemoval(vReal, samples);
+  FFT.windowing(FFTWindow::Hamming, FFTDirection::Forward);
+  FFT.compute(FFTDirection::Forward);
+  FFT.complexToMagnitude();
 }
 
 // Will calculate the corresponding color for the full strip
